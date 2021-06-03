@@ -9,7 +9,7 @@
             "DOM.Iterable",
             "ES2017"
         ],
-        "rootDir": ".",
+        "rootDir": "../libs",
         "newLine": "LF",
         "declaration": true,
         "sourceMap": false,
