@@ -78,6 +78,13 @@ interface Image {
      */
     //% helper=imageBlitRow
     blitRow(dstX: number, dstY: number, from: Image, fromX: number, fromH: number): void;
+
+    /**
+     * Copy an image from a source rectangle to a destination rectangle, stretching or
+     * compressing to fit the dimensions of the destination rectangle, if necessary.
+     */
+    //% helper=imageBlit
+    blit(xDst: number, yDst: number, wDst: number, hDst: number, src: Image, xSrc: number, ySrc: number, wSrc: number, hSrc: number, transparent: boolean): void;
 }
 
 interface ScreenImage extends Image {
@@ -118,8 +125,26 @@ namespace helpers {
     //% shim=ImageMethods::_blitRow
     declare function _blitRow(img: Image, xy: number, from: Image, xh: number): void;
 
+    //% shim=ImageMethods::_blit
+    declare function _blit(img: Image, src: Image, args: any[]): void;
+
     function pack(x: number, y: number) {
         return (Math.clamp(-30000, 30000, x | 0) & 0xffff) | (Math.clamp(-30000, 30000, y | 0) << 16)
+    }
+
+    const _blitArgs: any = [];
+
+    export function imageBlit(img: Image, xDst: number, yDst: number, wDst: number, hDst: number, src: Image, xSrc: number, ySrc: number, wSrc: number, hSrc: number, transparent: boolean) {
+        _blitArgs[0] = xDst;
+        _blitArgs[1] = yDst;
+        _blitArgs[2] = wDst;
+        _blitArgs[3] = hDst;
+        _blitArgs[4] = xSrc;
+        _blitArgs[5] = ySrc;
+        _blitArgs[6] = wSrc;
+        _blitArgs[7] = hSrc;
+        _blitArgs[8] = transparent;
+        _blit(img, src, _blitArgs);
     }
 
     export function imageBlitRow(img: Image, dstX: number, dstY: number, from: Image, fromX: number, fromH: number): void {

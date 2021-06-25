@@ -1075,6 +1075,24 @@ void _blitRow(Image_ img, int xy, Image_ from, int xh) {
     blitRow(img, XX(xy), YY(xy), from, XX(xh), YY(xh));
 }
 
+void blit(Image_ dst, int xDst, int yDst, int wDst, int hDst, Image_ src, int xSrc, int ySrc, int wSrc, int hSrc, bool transparent) {
+    // TODO
+}
+
+//%
+void _blit(Image_ dst, Image_ src, RefCollection args) {
+    int xDst = toInt(args.getAt(0));
+    int yDst = toInt(args.getAt(1));
+    int wDst = toInt(args.getAt(2));
+    int hDst = toInt(args.getAt(3));
+    int xSrc = toInt(args.getAt(4));
+    int ySrc = toInt(args.getAt(5));
+    int wSrc = toInt(args.getAt(6));
+    int hSrc = toInt(args.getAt(7));
+    auto transparent = toBoolQuick(args.getAt(8));
+    blit(dst, xDst, yDst, wDst, hDst, src, xSrc, ySrc, wSrc, hSrc, transparent);
+}
+
 void fillCircle(Image_ img, int cx, int cy, int r, int c) {
     int x = r - 1;
     int y = 0;
