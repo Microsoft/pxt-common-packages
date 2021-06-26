@@ -10,6 +10,10 @@ class PhysicsEngine {
 
     removeSprite(sprite: Sprite) { }
 
+    _allSprites(): Sprite[] {
+        return null;
+    }
+
     /** move a single sprite **/
     moveSprite(s: Sprite, dx: Fx8, dy: Fx8) { }
 
@@ -100,6 +104,10 @@ class ArcadePhysicsEngine extends PhysicsEngine {
         if (tm && tm.isOnWall(sprite)) {
             sprite.flags |= sprites.Flag.IsClipping;
         }
+    }
+
+    _allSprites(): Sprite[] {
+        return this.sprites;
     }
 
     removeSprite(sprite: Sprite) {
@@ -350,27 +358,25 @@ class ArcadePhysicsEngine extends PhysicsEngine {
         const s = movingSprite.sprite;
         // if the sprite is already clipping into a wall,
         // allow free movement rather than randomly 'fixing' it
-        if (s.flags & sprites.Flag.IsClipping) {
-            if (!tm.isOnWall(s)) {
-                s.flags &= ~sprites.Flag.IsClipping;
-            }
+        if ((s.flags & sprites.Flag.IsClipping) && !tm.isOnWall(s)) {
+            s.flags &= ~sprites.Flag.IsClipping;
         }
         if (!s.isStatic()) s.setHitbox();
         const hbox = s._hitbox;
         const tileScale = tm.scale;
         const tileSize = 1 << tileScale;
 
-        const xDiff = Fx.sub(
-            s._x,
-            s._lastX
-        );
-
-        const yDiff = Fx.sub(
-            s._y,
-            s._lastY
-        );
-
         if (!(s.flags & SPRITE_NO_WALL_COLLISION)) {
+            const xDiff = Fx.sub(
+                s._x,
+                s._lastX
+            );
+
+            const yDiff = Fx.sub(
+                s._y,
+                s._lastY
+            );
+
             if (xDiff !== Fx.zeroFx8) {
                 const right = xDiff > Fx.zeroFx8;
                 const x0 = Fx.toIntShifted(
@@ -640,88 +646,10 @@ class ArcadePhysicsEngine extends PhysicsEngine {
                 );
                 this.tilemapCollisions(ms, tm);
                 // otherwise, accept movement...
-            } else if (tm.isOnWall(s) && !this.canResolveClipping(s, tm)) {
-                // if no luck, flag as clipping into a wall
-                s.flags |= sprites.Flag.IsClipping;
             } else {
-                // or clear clipping if no longer clipping
-                s.flags &= ~sprites.Flag.IsClipping;
+                tm._checkClipping(s, this.maxStep);
             }
         }
-    }
-
-    // Attempt to resolve clipping by moving the sprite slightly up / down / left / right
-    protected canResolveClipping(s: Sprite, tm: tiles.TileMap) {
-        if (!s.isStatic()) s.setHitbox();
-        const hbox = s._hitbox;
-        const sz = 1 << tm.scale;
-        const maxMove = this.maxStep;
-        const origY = s._y;
-        const origX = s._x;
-        const l = Fx.toInt(hbox.left);
-        const r = Fx.toInt(hbox.right);
-        const t = Fx.toInt(hbox.top);
-        const b = Fx.toInt(hbox.bottom);
-
-        {   // bump up and test;
-            const offset = (b + 1) % sz;
-            if (offset <= maxMove) {
-                s._y = Fx.sub(
-                    s._y,
-                    Fx8(offset)
-                );
-                if (!tm.isOnWall(s)) {
-                    return true;
-                } else {
-                    s._y = origY;
-                }
-            }
-        }
-        {   // bump down and test;
-            const offset = (Math.floor(t / sz) + 1) * sz - t;
-            if (offset <= maxMove) {
-                s._y = Fx.add(
-                    s._y,
-                    Fx8(offset)
-                );
-                if (!tm.isOnWall(s)) {
-                    return true;
-                } else {
-                    s._y = origY;
-                }
-            }
-        }
-        {   // bump left and test;
-            const offset = (r + 1) % sz;
-            if (offset <= maxMove) {
-                s._x = Fx.sub(
-                    s._x,
-                    Fx8(offset)
-                );
-                if (!tm.isOnWall(s)) {
-                    return true;
-                } else {
-                    s._x = origX;
-                }
-            }
-        }
-        {   // bump right and test;
-            const offset = (Math.floor(l / sz) + 1) * sz - l;
-            if (offset <= maxMove) {
-                s._x = Fx.add(
-                    s._x,
-                    Fx8(offset)
-                );
-                if (!tm.isOnWall(s)) {
-                    return true;
-                } else {
-                    s._x = origX;
-                }
-            }
-        }
-
-        // no trivial adjustment worked; it's going to clip for now
-        return false;
     }
 
     protected constrain(v: Fx8) {
