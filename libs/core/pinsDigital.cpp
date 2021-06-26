@@ -98,6 +98,19 @@ void onEvent(DigitalInOutPin pin, PinEvent event, Action body) {
 }
 
 /**
+ * Measure pin capacitance.
+ */
+//%
+int readCapacitance(DigitalInOutPin pin) {
+    // on STM32F4 this requires 2M pulldown
+    // other chips to be tested
+    pin->setDigitalValue(1);
+    pin->getDigitalValue(PullMode::None);
+    sleep_us(50);
+    return pin->getAnalogValue();
+}
+
+/**
 * Return the duration of a pulse in microseconds
 * @param name the pin which measures the pulse
 * @param value the value of the pulse (default high)
