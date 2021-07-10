@@ -15,18 +15,23 @@ namespace game {
      * Ask the player for a string value.
      * @param message The message to display on the text-entry screen
      * @param answerLength The maximum number of characters the user can enter (1 - 24)
+     * @param timeOut The time till the keyboard will time out. You can enter in seconds (0 - 99).
      */
     //% group="Gameplay"
     //% weight=10 help=game/ask-for-string
-    //% blockId=gameaskforstring block="ask for string %message || and max length %answerLength"
+    //% blockId=gameaskforstring block="ask for string %message || and max length %answerLength and timeout after %timeOut"
     //% message.defl=""
     //% answerLength.defl="12"
     //% answerLength.min=1
     //% answerLength.max=24
+    //% timeOut.defl=0
+    //% timeOut.min=0
+    //% timeOut.max=99
     //% group="Prompt"
-    export function askForString(message: string, answerLength = 12) {
+    //% expandableArgumentMode="enabled"
+    export function askForString(message: string, answerLength = 12, timeOut: number = 0) {
         let p = new game.Prompt();
-        const result = p.show(message, answerLength);
+        const result = p.show(message, answerLength, timeOut * 1000);
         return result;
     }
 
@@ -135,6 +140,8 @@ namespace game {
         private inputIndex: number;
         private blink: boolean;
         private frameCount: number;
+        private timerEnd: number;
+        private timerSprite: Sprite;
 
         constructor(theme?: PromptTheme) {
             if (theme) {
@@ -159,10 +166,14 @@ namespace game {
             this.inputIndex = 0;
         }
 
-        show(message: string, answerLength: number) {
+        show(message: string, answerLength: number, timeOut: number) {
             this.message = message;
             this.answerLength = answerLength;
             this.inputIndex = 0;
+
+            if (timeOut != 0) {
+                this.timerEnd = game.currentScene().millis() + timeOut;
+            }
 
             controller._setUserEventsEnabled(false);
             game.pushScene()
@@ -171,12 +182,17 @@ namespace game {
             this.registerHandlers();
             this.confirmPressed = false;
 
-            pauseUntil(() => this.confirmPressed);
+            pauseUntil(() => this.confirmPressed, timeOut);
 
             game.popScene();
             controller._setUserEventsEnabled(true);
 
-            return this.result;
+            if(this.confirmPressed) {
+                return this.result;
+            }
+            else {
+                return null;
+            }
         }
 
         private draw() {
@@ -184,6 +200,38 @@ namespace game {
             this.drawKeyboard();
             this.drawInputarea();
             this.drawBottomBar();
+        }
+
+        private drawTimerCheck() {
+            if(this.timerEnd !== undefined) {
+                this.drawTimer(this.timerEnd - game.currentScene().millis());
+            }
+        }
+
+        private drawTimer(millis: number) {
+            if (millis < 0) millis = 0;
+            millis |= 0;
+    
+            const seconds = Math.idiv(millis, 1000) + 1;
+            const secondsString = seconds.toString()
+
+            if(this.timerSprite === undefined) {
+                const letter = image.create(CELL_WIDTH, CELL_HEIGHT);
+
+                this.timerSprite = sprites.create(letter, -1);
+
+                // Set to the top right corner of the screen
+                this.timerSprite.setPosition(155, 5);
+            }
+
+            this.timerSprite.image.fill(3);
+
+            if(secondsString.length != 1) {
+                this.timerSprite.image.print(secondsString, 0, LETTER_OFFSET_Y);
+            }
+            else {
+                this.timerSprite.image.print(secondsString, LETTER_OFFSET_X, LETTER_OFFSET_Y);
+            }
         }
 
         private drawPromptText() {
@@ -359,6 +407,8 @@ namespace game {
 
                     this.updateSelectedInput();
                 }
+
+                this.drawTimerCheck()
             })
         }
 
